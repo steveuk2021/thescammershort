@@ -65,9 +65,10 @@
 
 11. **Operational readiness**
     - Config + secrets management.
-    - Deploy pipeline (GitHub → Railway).
+    - Deploy pipeline (GitHub → Railway + Vercel).
+    - Services: API + Paper trader + Live trader (no worker service).
     - Basic alert surfaces (dashboard + debug log).
-    - Validation: deploy and confirm worker heartbeat + API health.
+    - Validation: deploy and confirm API health + paper/live heartbeats.
 
 12. **Validation**
     - Dry run on testnet.

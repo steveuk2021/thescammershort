@@ -7,6 +7,7 @@ from .bitget_client import BitgetClient
 from .config import settings, paper_settings
 from .strategy import StrategyEngine
 from .db import get_conn
+from backend.worker.telemetry_writer import write_heartbeat
 from .db_ops import (
     create_run,
     end_run,
@@ -325,6 +326,7 @@ class PaperTrader:
     def run_once(self) -> None:
         self._select_and_open()
         while True:
+            write_heartbeat("paper")
             print(f"[paper] poll tick {datetime.now(timezone.utc).isoformat()} interval={self.settings.poll_interval_sec}s")
             self._poll_and_update()
             time.sleep(self.settings.poll_interval_sec)

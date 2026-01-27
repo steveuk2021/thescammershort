@@ -12,6 +12,7 @@ interface RunStatusProps {
   isPaused: boolean
   run: any | null
   heartbeats: any[]
+  mode: "paper" | "live"
 }
 
 // Strategy definitions
@@ -33,8 +34,8 @@ const STRATEGIES = {
   },
 }
 
-export function RunStatus({ isPaused, run, heartbeats }: RunStatusProps) {
-  const latestHeartbeat = heartbeats?.[0]
+export function RunStatus({ isPaused, run, heartbeats, mode }: RunStatusProps) {
+  const latestHeartbeat = heartbeats?.find((h) => h?.service === mode) || heartbeats?.[0]
   const lastHeartbeatTs = latestHeartbeat?.ts || null
   const lastHeartbeatDate = lastHeartbeatTs ? new Date(lastHeartbeatTs) : null
   const now = new Date()

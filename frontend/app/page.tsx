@@ -20,7 +20,7 @@ export default function Dashboard() {
       <main className="p-4 space-y-4">
         {/* Top row: Status + Portfolio */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <RunStatus key={mode} isPaused={isPaused} run={run} heartbeats={heartbeats} />
+          <RunStatus key={mode} isPaused={isPaused} run={run} heartbeats={heartbeats} mode={mode} />
           <div className="lg:col-span-2">
             <PortfolioOverview key={mode} run={run} positions={positions} snapshots={snapshots} legs={legs} />
           </div>
