@@ -52,7 +52,7 @@ The system is designed as a **betting machine**, not a predictive model.
 |---|---|
 | Instrument | USDT-M perpetuals |
 | Selection | **Top 10 gainers by 24h % change** |
-| Filters | **Max pump filter: exclude > 15% (configurable)** |
+| Filters | **Max pump filter: include only > 15% (configurable)** |
 | Veto Rules | **None** |
 | Regime Filters | **None** |
 
@@ -76,8 +76,13 @@ All risk, sizing, exits, and comparisons are defined **only here**.
 | Total Notional Exposure | **3000 USDT** |
 
 **Notes**
-- Percentages are **always measured against total margin at risk**
-- Equity balance, withdrawals, or deposits do **not** change the reference base
+- **Initial Investment** is a fixed baseline per run (paper or live).
+  - Paper: `PAPER_INITIAL_BALANCE`
+  - Live: `LIVE_INITIAL_BALANCE`
+- **Total PnL** = realized + unrealized trading PnL (independent of deposits/withdrawals).
+- **Current Balance / Equity** is exchange account equity (live) or simulated balance (paper).
+- Percentages used for sizing/filters are **measured against total margin at risk**.
+- Paper and Live runs are **independent** and may run in parallel with separate configs.
 
 ---
 
@@ -87,6 +92,7 @@ All risk, sizing, exits, and comparisons are defined **only here**.
 |---|---|
 | Entry Trigger | Operator-configured |
 | Default Time | **04:00 UTC** (12:00 China time) |
+| Entry Window | **Start within 60 minutes after entry time** |
 | Frequency | Once per day |
 | Execution | **Market orders**; blind short on all Top 10 gainers |
 | Size Rounding | **Always round down** to valid exchange size |
@@ -114,42 +120,43 @@ All strategies:
 
 ---
 
-### Strategy 1 — Raw / Control
+### Strategy S1 — Hard SL / Hard TP
 
 | Rule | Value |
 |---|---|
-| Leg TP | None |
-| Portfolio TP | None |
-| Portfolio SL | None |
-| Exit | **24h hard cutoff only** |
-
-Purpose: **Baseline behavior measurement**
-
----
-
-### Strategy 2 — Harvest & Cap
-
-| Rule | Value |
-|---|---|
-| Leg TP | Close leg if **PnL > +100% of margin** (+100 USDT) |
 | Portfolio TP | Close all if **PnL > +30%** (+300 USDT) |
-| Portfolio SL | None |
-| Exit | Leg TP / Portfolio TP / 24h cutoff |
+| Portfolio SL | Close all if **PnL < –30%** (–300 USDT) |
+| Exit | Portfolio TP / Portfolio SL / **24h hard cutoff** |
 
-Purpose: **Capture tail winners + cap upside**
+Purpose: **Cap downside and lock wins**
 
 ---
 
-### Strategy 3 — Capital Protection
+### Strategy S2 — Raw 24h Only
 
 | Rule | Value |
 |---|---|
-| Leg TP | None |
 | Portfolio TP | None |
-| Portfolio SL | Close all if **PnL < –30%** (–300 USDT) |
-| Exit | Portfolio SL / 24h cutoff |
+| Portfolio SL | None |
+| Exit | **24h hard cutoff only** (or liquidation) |
 
-Purpose: **Measure cost of protection**
+Purpose: **Pure mean-reversion test**
+
+**Notes**
+- **No global kill switch** in S2 (true no‑SL mode).
+
+---
+
+### Strategy S3 — S1 + Trailing Leg Stop
+
+| Rule | Value |
+|---|---|
+| Portfolio TP | Close all if **PnL > +30%** (+300 USDT) |
+| Portfolio SL | Close all if **PnL < –30%** (–300 USDT) |
+| Leg Trailing | If leg **PnL ≥ +100%**, apply **5% retracement** trailing stop on that leg |
+| Exit | Portfolio TP / Portfolio SL / Trailing leg stop / **24h hard cutoff** |
+
+Purpose: **Protect big winners while keeping the basket open**
 
 ---
 
@@ -183,6 +190,7 @@ At **every poll**, the system **persists**:
 - Symbol
 - Price
 - Unrealized PnL (USDT)
+- **Live only:** entry price, position size, margin used, leverage (all from exchange)
 - Run ID
 
 **Purpose**
@@ -195,6 +203,21 @@ At **every poll**, the system **persists**:
 - Full tick-level data is **not required**
 - Poll-based snapshots are sufficient
 - DB technology: **Supabase Postgres**
+- **Live mode source of truth:** all stored values are pulled from Bitget, not configs
+- Run metadata stores **initial investment** and **current balance** for UI/analytics
+
+---
+
+## 8.1 Backtest & Strategy Comparison (Planned)
+
+Because snapshots are saved every 30s, the system will **replay** the same run to compare **S1 / S2 / S3** offline.
+
+**Planned outputs**
+- Per-strategy PnL and DD
+- Exit reason and time
+- Win rate and EV (later)
+
+Backtest does **not** require live trading; it runs from stored snapshots.
 
 ---
 
@@ -209,6 +232,8 @@ At **every poll**, the system **persists**:
 - Leverage
 - Strategy tag (paper only)
  - Order intent price vs actual execution price (entry/exit)
+- Initial investment (fixed baseline)
+- Current balance/equity (live)
 
 ### Per Leg (Coin)
 - Symbol
@@ -237,9 +262,11 @@ At **every poll**, the system **persists**:
 ### Dashboard
 - Real-time positions
 - Per-leg & portfolio PnL
-- Equity & margin health
+- Current balance/equity and used margin
 - Max DD tracking
 - Bot state (RUN / PAUSE)
+- **LIVE tab uses exchange-backed values**
+- **PAPER tab uses simulated values**
 
 ### Manual Controls
 - Flatten all (reduce-only)

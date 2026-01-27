@@ -4,11 +4,38 @@
 - `product.md`: product spec and rules
 - `architecture.md`: system architecture (Phase 0)
 - `gettingstarted.md`: entry point
+- `env.sh`: local PYTHONPATH helper
 - `.env.example`: config template for local dev
-- `docs/env.md`: env var reference
+- `docs/env.md`: env var reference (paper/live balances + initial investment)
+- `docs/db.md`: DB schema overview
 - `backend/`: Python services
   - `backend/worker/`: trading worker
   - `backend/api/`: FastAPI service
   - `backend/common/`: shared libs
-- `frontend/`: Next.js UI
+- `backend/common/bitget_client.py`: Bitget REST client (Phase 0)
+- `backend/common/bitget_symbols.py`: helpers for gainer selection
+- `backend/common/bitget_validation.py`: env validation
+- `backend/common/bitget_notes.md`: Bitget integration notes
+- `backend/common/config.py`: env config loader
+- `backend/common/strategy.py`: core strategy logic (selection + sizing)
+- `backend/common/db.py`: Postgres connection helper
+- `backend/common/db_ops.py`: DB ops (runs, balances, legs, events)
+- `backend/common/time_utils.py`: UTC time helpers
+- `backend/common/run_window.py`: entry time window helper
+- `backend/requirements.txt`: backend deps
+- `backend/db/schema.sql`: Postgres schema (Phase 0)
+- `backend/api/main.py`: FastAPI endpoints (runs, positions, legs, snapshots)
+- `backend/api/run_api.py`: local API runner
+- `backend/worker/strategy_runner.py`: live selection runner (prints legs)
+- `backend/worker/strategy_dryrun.py`: dry-run selection from sample_output.json
+- `backend/worker/telemetry_writer.py`: DB snapshot + heartbeat writer
+- `backend/worker/telemetry_test.py`: inserts test run + snapshot + heartbeat
+- `backend/worker/worker_service.py`: scheduler + run lifecycle + command polling
+- `backend/worker/paper_trading_service.py`: paper trading loop (simulated fills)
+- `backend/common/live_trader.py`: live trading loop (real orders)
+- `backend/worker/live_trading_service.py`: live trading runner
+- `frontend/`: Next.js UI (V0 app)
+- `frontend/.env.local`: frontend API base URL
+- `frontend/lib/api.ts`: frontend API client
+- `frontend/hooks/use-api-data.ts`: polling data hook (runs, positions, legs, snapshots)
 - `infra/`: deployment/config assets
