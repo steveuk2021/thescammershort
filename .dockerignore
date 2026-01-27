@@ -1,0 +1,11 @@
+.git
+.gitignore
+.env
+.DS_Store
+backend/.venv
+**/__pycache__/
+**/*.pyc
+UI
+frontend/node_modules
+frontend/.next
+frontend/.turbo
