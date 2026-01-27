@@ -9,7 +9,8 @@ app = FastAPI(title="The Scammer Short API")
 # Allow local UI to call API
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "https://thescammershort.vercel.app"],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
