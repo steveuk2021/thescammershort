@@ -5,6 +5,7 @@ from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.common.db import get_conn
+from backend.common.config import RuntimeSettings, settings
 from backend.common.db_ops import get_settings, upsert_settings
 from backend.common.db_ops import get_legs
 
@@ -43,6 +44,15 @@ def _require_settings_auth(authorization: str | None) -> None:
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+def _get_hold_hours_for_mode(mode: str) -> float:
+    prefix = "PAPER" if mode == "paper" else "LIVE"
+    runtime = RuntimeSettings(prefix, mode, settings)
+    overrides = get_settings(mode)
+    if overrides:
+        runtime.apply_overrides(overrides)
+    return runtime.hold_hours
 
 
 @app.get("/settings")
@@ -92,11 +102,12 @@ def get_latest_run(mode: str = None):
             row = cur.fetchone()
             if not row:
                 return {"run": None}
+            run_mode = row[2]
             return {
                 "run": {
                     "run_id": row[0],
                     "exchange": row[1],
-                    "mode": row[2],
+                    "mode": run_mode,
                     "entry_time_utc": row[3],
                     "start_ts": row[4],
                     "end_ts": row[5],
@@ -109,6 +120,7 @@ def get_latest_run(mode: str = None):
                     "strategy_tag": row[12],
                     "initial_balance": float(row[13]) if row[13] is not None else None,
                     "current_balance": float(row[14]) if row[14] is not None else None,
+                    "hold_hours": float(_get_hold_hours_for_mode(run_mode)),
                 }
             }
 

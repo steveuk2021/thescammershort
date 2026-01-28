@@ -55,7 +55,8 @@ export function PositionsTable({ run, positions, snapshots }: PositionsTableProp
     const defaultMargin = run?.margin_per_leg_usdt || 100
     const start = run?.start_ts ? new Date(run.start_ts).getTime() : null
     const now = Date.now()
-    const remainingMs = start ? Math.max(0, 24 * 3600 * 1000 - (now - start)) : null
+    const holdHours = typeof run?.hold_hours === "number" ? run.hold_hours : 24
+    const remainingMs = start ? Math.max(0, holdHours * 3600 * 1000 - (now - start)) : null
     const timeRemaining = remainingMs
       ? `${Math.floor(remainingMs / 3600000)}h ${Math.floor((remainingMs % 3600000) / 60000)}m`
       : "—"
