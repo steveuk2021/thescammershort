@@ -35,6 +35,7 @@ export default function ReportsPage() {
   const [strategy, setStrategy] = useState("")
   const [dateFrom, setDateFrom] = useState("")
   const [dateTo, setDateTo] = useState("")
+  const [applied, setApplied] = useState({ mode: "", strategy: "", dateFrom: "", dateTo: "" })
   const [runs, setRuns] = useState<ReportRun[]>([])
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
   const [runDetail, setRunDetail] = useState<ReportRun | null>(null)
@@ -43,21 +44,30 @@ export default function ReportsPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const toUtcIso = (value: string) => {
+    if (!value) return ""
+    // Treat datetime-local as UTC and append seconds + Z
+    return value.includes(":") ? `${value}:00Z` : `${value}T00:00:00Z`
+  }
+
   const query = useMemo(() => {
     const params = new URLSearchParams()
-    if (mode) params.set("mode", mode)
-    if (strategy) params.set("strategy", strategy)
-    if (dateFrom) params.set("date_from", dateFrom)
-    if (dateTo) params.set("date_to", dateTo)
+    if (applied.mode) params.set("mode", applied.mode)
+    if (applied.strategy) params.set("strategy", applied.strategy)
+    if (applied.dateFrom) params.set("date_from", toUtcIso(applied.dateFrom))
+    if (applied.dateTo) params.set("date_to", toUtcIso(applied.dateTo))
     return params.toString()
-  }, [mode, strategy, dateFrom, dateTo])
+  }, [applied])
 
   const loadRuns = async () => {
     setLoading(true)
     setError(null)
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/reports/runs?${query}`, { cache: "no-store" })
-      if (!res.ok) throw new Error("Failed to load runs")
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(`Failed to load runs (${res.status}): ${text}`)
+      }
       const data = await res.json()
       setRuns(data.runs || [])
     } catch (e: any) {
@@ -70,7 +80,10 @@ export default function ReportsPage() {
   const loadAggregate = async () => {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/reports/aggregate?${query}`, { cache: "no-store" })
-      if (!res.ok) throw new Error("Failed to load aggregate")
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(`Failed to load aggregate (${res.status}): ${text}`)
+      }
       const data = await res.json()
       setAggregate(data.aggregate || null)
     } catch {
@@ -83,7 +96,10 @@ export default function ReportsPage() {
     setError(null)
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/reports/run?run_id=${runId}`, { cache: "no-store" })
-      if (!res.ok) throw new Error("Failed to load run detail")
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(`Failed to load run detail (${res.status}): ${text}`)
+      }
       const data = await res.json()
       setRunDetail(data.run || null)
       setLegs(data.legs || [])
@@ -170,6 +186,27 @@ export default function ReportsPage() {
               onChange={(e) => setDateTo(e.target.value)}
             />
           </label>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            className="h-9 rounded bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-60"
+            onClick={() => setApplied({ mode, strategy, dateFrom, dateTo })}
+            disabled={loading}
+          >
+            {loading ? "Loading..." : "Apply Filters"}
+          </button>
+          <button
+            className="h-9 rounded border border-border px-4 text-sm text-foreground"
+            onClick={() => {
+              setMode("")
+              setStrategy("")
+              setDateFrom("")
+              setDateTo("")
+              setApplied({ mode: "", strategy: "", dateFrom: "", dateTo: "" })
+            }}
+          >
+            Reset
+          </button>
         </div>
 
         {aggregate && (
