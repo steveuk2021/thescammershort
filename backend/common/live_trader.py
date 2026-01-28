@@ -377,6 +377,11 @@ class LiveTrader:
             end_run(self.run_id)
             insert_event("info", "live_run_completed", f"exit {decision.reason}", self.run_id)
             print(f"[live] run completed reason={decision.reason}")
+            # Prevent duplicate close and allow new run within the same entry window
+            self.legs.clear()
+            self.max_leg_pnl_pct.clear()
+            self.run_id = None
+            return
 
     def run_forever(self) -> None:
         while True:
