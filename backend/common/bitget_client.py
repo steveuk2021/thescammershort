@@ -126,7 +126,7 @@ class BitgetClient:
             margin_coin=margin_coin,
             order_type="market",
             trade_side="close",
-            margin_mode=None,
+            margin_mode="crossed",
         )
 
     def set_leverage(
