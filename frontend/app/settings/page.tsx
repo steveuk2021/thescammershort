@@ -132,6 +132,14 @@ export default function SettingsPage() {
   return (
     <div className="min-h-screen bg-background text-foreground p-4 space-y-6">
       <div className="rounded border border-border bg-card p-4">
+        <a
+          href="/"
+          className="inline-flex items-center rounded-lg bg-primary px-4 py-2 text-base font-semibold text-primary-foreground shadow-sm"
+        >
+          Dashboard
+        </a>
+      </div>
+      <div className="rounded border border-border bg-card p-4">
         <h1 className="text-lg font-semibold">Settings</h1>
         <p className="text-xs text-muted-foreground mt-1">
           Basic auth required to view and edit settings.
