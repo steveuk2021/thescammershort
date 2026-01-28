@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 
 type Mode = "paper" | "live" | ""
 
@@ -40,6 +42,9 @@ export default function ReportsPage() {
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null)
   const [runDetail, setRunDetail] = useState<ReportRun | null>(null)
   const [legs, setLegs] = useState<ReportLeg[]>([])
+  const [series, setSeries] = useState<any[]>([])
+  const [seriesSymbols, setSeriesSymbols] = useState<string[]>([])
+  const [initialInvestment, setInitialInvestment] = useState<number>(0)
   const [aggregate, setAggregate] = useState<{ avg_final_pnl_pct: number | null; avg_max_dd_pct: number | null; avg_peak_pnl_pct: number | null } | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -103,10 +108,35 @@ export default function ReportsPage() {
       const data = await res.json()
       setRunDetail(data.run || null)
       setLegs(data.legs || [])
+      await loadSeries(runId)
     } catch (e: any) {
       setError(e?.message || "Failed to load run detail")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadSeries = async (runId: string) => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/reports/run_timeseries?run_id=${runId}`, { cache: "no-store" })
+      if (!res.ok) {
+        const text = await res.text()
+        throw new Error(`Failed to load timeseries (${res.status}): ${text}`)
+      }
+      const data = await res.json()
+      const seriesRaw = data.series || []
+      const initial = data.initial_investment || 0
+      const normalized = seriesRaw.map((row: any) => ({
+        ...row,
+        aggregate_equity: initial + (row.aggregate_pnl || 0),
+      }))
+      setSeries(normalized)
+      setSeriesSymbols(data.symbols || [])
+      setInitialInvestment(initial)
+    } catch {
+      setSeries([])
+      setSeriesSymbols([])
+      setInitialInvestment(0)
     }
   }
 
@@ -302,6 +332,38 @@ export default function ReportsPage() {
               <div className="text-lg font-semibold">{runDetail.peak_pnl?.toFixed(2) ?? "—"}</div>
             </div>
           </div>
+
+          {series.length > 0 && (
+            <div className="rounded border border-border bg-background p-3">
+              <div className="mb-2 text-xs text-muted-foreground">Equity Curve (Initial + Unrealized) with Leg PnL</div>
+              <ChartContainer
+                config={{
+                  aggregate: { label: "Aggregate Equity", color: "hsl(var(--primary))" },
+                }}
+              >
+                <LineChart data={series}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="ts" tickFormatter={(v) => v.slice(11, 19)} />
+                  <YAxis />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Line type="monotone" dataKey="aggregate_equity" stroke="var(--color-aggregate)" dot={false} strokeWidth={2} />
+                  {seriesSymbols.map((sym, i) => (
+                    <Line
+                      key={sym}
+                      type="monotone"
+                      dataKey={sym}
+                      stroke={`hsl(${(i * 37) % 360} 70% 60%)`}
+                      dot={false}
+                      strokeWidth={1}
+                    />
+                  ))}
+                </LineChart>
+              </ChartContainer>
+              <div className="mt-2 text-xs text-muted-foreground">
+                Initial Investment: {initialInvestment.toFixed(2)}
+              </div>
+            </div>
+          )}
 
           <div className="overflow-auto">
             <table className="w-full text-sm">

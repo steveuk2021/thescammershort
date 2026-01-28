@@ -482,6 +482,50 @@ def get_reports_aggregate(
     }
 
 
+@app.get("/reports/run_timeseries")
+def get_report_run_timeseries(run_id: str):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                select initial_balance
+                from runs
+                where run_id = %s
+                """,
+                (run_id,),
+            )
+            row = cur.fetchone()
+            initial_investment = float(row[0]) if row and row[0] is not None else 0.0
+
+            cur.execute(
+                """
+                select ts::text, symbol, unrealized_pnl_usdt
+                from snapshots
+                where run_id = %s
+                order by ts asc
+                """,
+                (run_id,),
+            )
+            rows = cur.fetchall()
+
+    series_map: dict[str, dict] = {}
+    symbols: set[str] = set()
+    for ts, symbol, pnl in rows:
+        symbols.add(symbol)
+        if ts not in series_map:
+            series_map[ts] = {"ts": ts, "aggregate_pnl": 0.0}
+        pnl_val = float(pnl or 0)
+        series_map[ts]["aggregate_pnl"] += pnl_val
+        series_map[ts][symbol] = pnl_val
+
+    series = [series_map[k] for k in sorted(series_map.keys())]
+    return {
+        "initial_investment": initial_investment,
+        "symbols": sorted(symbols),
+        "series": series,
+    }
+
+
 @app.get("/heartbeats/latest")
 def get_latest_heartbeats(limit: int = 20):
     with get_conn() as conn:

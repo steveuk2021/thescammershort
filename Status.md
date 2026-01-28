@@ -86,9 +86,9 @@
    - Secrets remain in Railway env.
 
 2. **Analytics & Reporting**
-   - Run history (completed only) with filters (date range, mode, strategy).
-   - Metrics per run: Initial Investment, Final PnL (realized), Max DD, Peak PnL.
-   - Drilldown to all legs with same metrics.
-   - Aggregates across runs (percent only, simple average).
-   - **Phase A (DONE):** list, filters, drilldown, aggregates.
-   - **Phase B (PENDING):** charts (equity curve + per‑leg lines).
+    - Run history (completed only) with filters (date range, mode, strategy).
+    - Metrics per run: Initial Investment, Final PnL (realized), Max DD, Peak PnL.
+    - Drilldown to all legs with same metrics.
+    - Aggregates across runs (percent only, simple average).
+    - **Phase A (DONE):** list, filters, drilldown, aggregates.
+    - **Phase B (DONE):** charts (equity curve + per‑leg lines).
