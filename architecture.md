@@ -34,7 +34,7 @@ Phase 0 is a test harness to evaluate the trading theory with adjustable paramet
 - **Sizing**: always round down to valid exchange size.
 - **Max pump filter**: include only symbols > 15% (configurable).
 - **Global kill switch**: close all if portfolio DD <= –30%.
-- **Hold time**: fixed 24 hours, no extensions.
+- **Hold time**: configurable via `HOLD_HOURS` (default 24), no extensions.
 - **Entry window**: start within 60 minutes after entry time.
 
 ## 5.1 Strategy Set (Phase 0)

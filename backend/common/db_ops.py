@@ -228,6 +228,40 @@ def insert_event(level: str, event_type: str, message: str, run_id: Optional[str
         conn.commit()
 
 
+def get_settings(mode: str) -> dict[str, str]:
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                select key, value
+                from settings
+                where mode = %s
+                """,
+                (mode,),
+            )
+            rows = cur.fetchall()
+            return {r[0]: r[1] for r in rows}
+
+
+def upsert_settings(mode: str, settings_map: dict[str, str]) -> None:
+    if not settings_map:
+        return
+    now = now_utc()
+    rows = [(mode, k, str(v), now) for k, v in settings_map.items()]
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.executemany(
+                """
+                insert into settings (mode, key, value, updated_ts)
+                values (%s, %s, %s, %s)
+                on conflict (mode, key)
+                do update set value = excluded.value, updated_ts = excluded.updated_ts
+                """,
+                rows,
+            )
+        conn.commit()
+
+
 def insert_leg(run_id: str, symbol: str, entry_price: float, qty: float) -> None:
     now = now_utc()
     with get_conn() as conn:

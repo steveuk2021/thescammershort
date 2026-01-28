@@ -105,7 +105,7 @@ Entry timing is configurable but **fixed per run**.
 
 | Rule | Definition |
 |---|---|
-| Hard Time Exit | **Close all positions at T + 24h** |
+| Hard Time Exit | **Close all positions at T + HOLD_HOURS** |
 | Extension | Not allowed |
 | Carry Positions | Not allowed |
 
@@ -358,3 +358,35 @@ The goal is to measure:
 Only after data is collected are parameters adjusted.
 
 ---
+
+## 14. New Feature List (Planned)
+
+### 14.1 DB‑Backed Settings + Settings Page
+- Move tunable runtime vars (paper/live strategy params) into DB.
+- UI page to edit settings without redeploy.
+- Keep secrets/infrastructure in Railway env.
+
+### 14.2 Analytics & Reporting
+**Metric definitions**
+- **Initial Investment / Margin at Open:** fixed baseline at run start.
+- **Final PnL (run/leg):** realized PnL only, scoped to that run.
+- **Max DD (leg):** most negative unrealized PnL for that leg.
+- **Max DD (run):** most negative aggregated unrealized PnL across all legs.
+- **Peak PnL (leg):** highest unrealized PnL for that leg.
+- **Peak PnL (run):** highest aggregated unrealized PnL across all legs.
+- **Equity curve (chart):** Initial Investment + aggregated unrealized PnL.
+
+**Run history (completed runs only)**
+- Filters: date range, mode (paper/live), strategy (S1/S2/S3).
+- Columns: run ID, mode, strategy, start/end, duration, close reason.
+- Metrics per run: Initial Investment (margin at open), Final PnL (realized), Max DD, Peak PnL.
+
+**Run drilldown (all legs)**
+- Per‑leg metrics: Initial Investment, Final PnL (realized), Max DD, Peak PnL.
+
+**Charts (per run)**
+- Equity curve: Initial Investment + aggregated unrealized PnL.
+- Lines: aggregate + individual legs (max 10 + 1 aggregate).
+
+**Aggregates across runs**
+- Percent only (simple average): Avg Final PnL %, Avg Max DD %, Avg Peak PnL %.

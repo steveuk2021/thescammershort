@@ -1,7 +1,10 @@
-from fastapi import FastAPI
+import base64
+import os
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.common.db import get_conn
+from backend.common.db_ops import get_settings, upsert_settings
 from backend.common.db_ops import get_legs
 
 app = FastAPI(title="The Scammer Short API")
@@ -17,9 +20,44 @@ app.add_middleware(
 )
 
 
+def _require_settings_auth(authorization: str | None) -> None:
+    user = os.getenv("SETTINGS_USER", "")
+    pw = os.getenv("SETTINGS_PASS", "")
+    if not user or not pw:
+        raise HTTPException(status_code=500, detail="Settings auth not configured")
+    if not authorization or not authorization.startswith("Basic "):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    token = authorization.split(" ", 1)[1].strip()
+    try:
+        decoded = base64.b64decode(token).decode("utf-8")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    if ":" not in decoded:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    u, p = decoded.split(":", 1)
+    if u != user or p != pw:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/settings")
+def get_runtime_settings(mode: str, authorization: str | None = Header(default=None)):
+    _require_settings_auth(authorization)
+    return {"mode": mode, "settings": get_settings(mode)}
+
+
+@app.put("/settings")
+def put_runtime_settings(mode: str, payload: dict, authorization: str | None = Header(default=None)):
+    _require_settings_auth(authorization)
+    settings_map = payload.get("settings", {})
+    if not isinstance(settings_map, dict):
+        raise HTTPException(status_code=400, detail="Invalid settings payload")
+    upsert_settings(mode, settings_map)
+    return {"ok": True}
 
 
 @app.get("/runs/latest")

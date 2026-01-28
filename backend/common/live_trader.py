@@ -14,6 +14,7 @@ from .db_ops import (
     get_active_run,
     get_open_legs,
     get_run_balances,
+    get_settings,
     insert_event,
     insert_leg,
     insert_order,
@@ -380,9 +381,18 @@ class LiveTrader:
     def run_forever(self) -> None:
         while True:
             write_heartbeat("live")
+            self._refresh_settings()
             if not self.run_id:
                 self._select_and_open()
             print(f"[live] poll tick {datetime.now(timezone.utc).isoformat()} interval={self.settings.poll_interval_sec}s")
             if self.run_id:
                 self._poll_and_update()
             time.sleep(self.settings.poll_interval_sec)
+
+    def _refresh_settings(self) -> None:
+        try:
+            overrides = get_settings(self.settings.mode)
+            if overrides:
+                self.settings.apply_overrides(overrides)
+        except Exception:
+            return

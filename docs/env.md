@@ -5,6 +5,7 @@
 - `EXCHANGE`: currently bitget
 - `USE_TESTNET`: true | false
  - `MODE`: legacy (used only by worker_service); not used for paper/live separation
+- DB settings (if present) override the corresponding env values for paper/live.
 
 ## Scheduling
 - `ENTRY_TIME_UTC`: daily entry time (HH:MM)
@@ -43,3 +44,5 @@
 ## API
 - `API_PORT`
 - `WORKER_HEARTBEAT_SEC`
+- `SETTINGS_USER`: basic auth username for settings page
+- `SETTINGS_PASS`: basic auth password for settings page

@@ -22,5 +22,8 @@ This project uses a single Supabase Postgres database.
 ### events
 - Alerts, errors, and notable system actions.
 
+### settings
+- Runtime config values by mode (paper/live).
+
 ## Source of Truth
 - Schema is defined in `backend/db/schema.sql`.

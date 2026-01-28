@@ -96,6 +96,15 @@ create table if not exists events (
   symbol text -- optional symbol link
 );
 
+-- Settings (runtime config stored in DB)
+create table if not exists settings (
+  mode text not null check (mode in ('paper', 'live')),
+  key text not null,
+  value text not null,
+  updated_ts timestamptz not null default now(),
+  primary key (mode, key)
+);
+
 -- Indexes
 create index if not exists idx_snapshots_run_ts on snapshots(run_id, ts);
 create index if not exists idx_orders_run_ts on orders(run_id, ts);

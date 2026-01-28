@@ -61,19 +61,33 @@
     - Configurable toggle (paper vs live).
     - Exchange order permissions verified.
     - LIVE_INITIAL_BALANCE required for live runs.
+    - Hedge mode close uses `side="sell"` + `tradeSide="close"`.
     - Validation: small live trade on subaccount.
 
-11. **Operational readiness**
+11. **[DONE] Operational readiness**
     - Config + secrets management.
     - Deploy pipeline (GitHub → Railway + Vercel).
     - Services: API + Paper trader + Live trader (no worker service).
     - Basic alert surfaces (dashboard + debug log).
     - Validation: deploy and confirm API health + paper/live heartbeats.
 
-12. **Validation**
+12. **[DONE] Validation**
     - Dry run on testnet.
     - Confirm logs, UI, and recovery.
 
 13. **Backtest & Strategy Comparison**
     - Replay stored snapshots for S1/S2/S3.
     - Output per-strategy PnL/DD/exit timing.
+
+## Next Feature Work (Planned)
+1. **DB‑Backed Settings + Settings Page**
+   - Store tunable runtime vars in DB.
+   - UI page to edit without redeploy.
+   - Secrets remain in Railway env.
+
+2. **Analytics & Reporting**
+   - Run history (completed only) with filters (date range, mode, strategy).
+   - Metrics per run: Initial Investment, Final PnL (realized), Max DD, Peak PnL.
+   - Drilldown to all legs with same metrics.
+   - Charts: equity curve (initial + aggregated unrealized), plus per‑leg lines.
+   - Aggregates across runs (percent only, simple average).

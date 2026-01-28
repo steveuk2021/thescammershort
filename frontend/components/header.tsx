@@ -1,6 +1,7 @@
 "use client"
 
-import { Activity } from "lucide-react"
+import { Activity, Settings } from "lucide-react"
+import Link from "next/link"
 
 interface HeaderProps {
   mode: "paper" | "live"
@@ -25,6 +26,13 @@ export function Header({ mode, setMode }: HeaderProps) {
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <span>Bitget USDT-M Futures</span>
           <div className="flex items-center gap-2">
+            <Link
+              href="/settings"
+              className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium text-muted-foreground hover:bg-muted"
+            >
+              <Settings className="h-3.5 w-3.5" />
+              Settings
+            </Link>
             <button
               className={`rounded px-2 py-0.5 text-xs font-medium ${
                 mode === "paper" ? "bg-primary/20 text-primary" : "text-muted-foreground"

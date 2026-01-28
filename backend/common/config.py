@@ -71,6 +71,31 @@ class RuntimeSettings:
         else:
             self.initial_balance = None
 
+    def apply_overrides(self, overrides: dict[str, str]) -> None:
+        # Keys use ENV-style names without prefix, stored in DB.
+        mapping = {
+            "STATUS": ("status", str),
+            "ENTRY_TIME_UTC": ("entry_time_utc", str),
+            "TRADE_WEEKENDS": ("trade_weekends", lambda v: str(v).lower() == "true"),
+            "NUM_LEGS": ("num_legs", int),
+            "MARGIN_PER_LEG_USDT": ("margin_per_leg_usdt", float),
+            "LEVERAGE": ("leverage", float),
+            "MAX_PUMP_PCT": ("max_pump_pct", float),
+            "GLOBAL_KILL_DD_PCT": ("global_kill_dd_pct", float),
+            "POLL_INTERVAL_SEC": ("poll_interval_sec", int),
+            "STRATEGY_TAG": ("strategy_tag", str),
+            "HOLD_HOURS": ("hold_hours", float),
+            "INITIAL_BALANCE": ("initial_balance", float),
+        }
+        for key, value in overrides.items():
+            if key not in mapping:
+                continue
+            attr, caster = mapping[key]
+            try:
+                setattr(self, attr, caster(value))
+            except Exception:
+                continue
+
 
 settings = GlobalSettings()
 paper_settings = RuntimeSettings("PAPER", "paper", settings)
