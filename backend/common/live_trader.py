@@ -77,8 +77,9 @@ class LiveTrader:
         self.run_id = str(uuid.uuid4())
         self.initial_balance = self.settings.initial_balance
         if self.initial_balance is None:
-            insert_event("error", "live_initial_balance_required", "LIVE_INITIAL_BALANCE is required for live runs", self.run_id)
+            insert_event("error", "live_initial_balance_required", "LIVE_INITIAL_BALANCE is required for live runs", None)
             print("[live] LIVE_INITIAL_BALANCE is required; exiting")
+            self.run_id = None
             return
         create_run(
             run_id=self.run_id,
