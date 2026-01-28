@@ -324,9 +324,11 @@ class PaperTrader:
         )
 
     def run_once(self) -> None:
-        self._select_and_open()
         while True:
             write_heartbeat("paper")
+            if not self.run_id:
+                self._select_and_open()
             print(f"[paper] poll tick {datetime.now(timezone.utc).isoformat()} interval={self.settings.poll_interval_sec}s")
-            self._poll_and_update()
+            if self.run_id:
+                self._poll_and_update()
             time.sleep(self.settings.poll_interval_sec)

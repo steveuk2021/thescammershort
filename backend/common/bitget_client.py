@@ -95,6 +95,7 @@ class BitgetClient:
         order_type: str = "market",
         trade_side: Optional[str] = None,
         reduce_only: Optional[str] = None,
+        margin_mode: Optional[str] = "crossed",
     ) -> Any:
         # side: buy | sell
         # trade_side: open | close (required in hedge mode)
@@ -105,8 +106,9 @@ class BitgetClient:
             "side": side,
             "orderType": order_type,
             "productType": "USDT-FUTURES",
-            "marginMode": "crossed",
         }
+        if margin_mode:
+            body["marginMode"] = margin_mode
         if trade_side:
             body["tradeSide"] = trade_side
         if reduce_only:
@@ -115,7 +117,8 @@ class BitgetClient:
 
     def close_position_market(self, symbol: str, size: str, position_side: str, margin_coin: str = "USDT") -> Any:
         # position_side: long | short
-        side = "sell" if position_side == "long" else "buy"
+        # Hedge mode close: side matches the position direction
+        side = "buy" if position_side == "long" else "sell"
         return self.place_order(
             symbol=symbol,
             side=side,
@@ -123,7 +126,7 @@ class BitgetClient:
             margin_coin=margin_coin,
             order_type="market",
             trade_side="close",
-            reduce_only="YES",
+            margin_mode=None,
         )
 
     def set_leverage(
