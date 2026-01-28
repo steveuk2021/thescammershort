@@ -37,6 +37,7 @@
 - `frontend/`: Next.js UI (V0 app)
 - `frontend/.env.local`: frontend API base URL
 - `frontend/app/settings/page.tsx`: settings page (DB-backed runtime config)
+- `frontend/app/reports/page.tsx`: reports page (run history + drilldown + aggregates)
 - `frontend/lib/api.ts`: frontend API client
 - `frontend/hooks/use-api-data.ts`: polling data hook (runs, positions, legs, snapshots)
 - `infra/`: deployment/config assets

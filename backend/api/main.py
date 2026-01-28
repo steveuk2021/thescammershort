@@ -1,6 +1,7 @@
 import base64
 import os
 from fastapi import FastAPI, Header, HTTPException
+from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.common.db import get_conn
@@ -236,6 +237,249 @@ def get_latest_snapshots(limit: int = 50, run_id: str = None):
                     for r in rows
                 ]
             }
+
+
+def _parse_dt(value: str) -> datetime:
+    return datetime.fromisoformat(value)
+
+
+@app.get("/reports/runs")
+def get_report_runs(
+    mode: str | None = None,
+    strategy: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+):
+    clauses = ["status = 'completed'"]
+    params: list[object] = []
+    if mode:
+        clauses.append("mode = %s")
+        params.append(mode)
+    if strategy:
+        clauses.append("lower(strategy_tag) = lower(%s)")
+        params.append(strategy)
+    if date_from:
+        clauses.append("start_ts >= %s")
+        params.append(date_from)
+    if date_to:
+        clauses.append("start_ts <= %s")
+        params.append(date_to)
+    where_sql = " and ".join(clauses)
+
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"""
+                select run_id, mode, strategy_tag, start_ts::text, end_ts::text, initial_balance
+                from runs
+                where {where_sql}
+                order by start_ts desc
+                """,
+                tuple(params),
+            )
+            runs = cur.fetchall()
+
+            out = []
+            for run_id, run_mode, strategy_tag, start_ts, end_ts, initial_balance in runs:
+                cur.execute(
+                    """
+                    select symbol, entry_price, exit_price, qty, status, max_favorable_pnl_usdt, max_adverse_pnl_usdt
+                    from legs
+                    where run_id = %s
+                    """,
+                    (run_id,),
+                )
+                legs = cur.fetchall()
+
+                # Final PnL (realized only)
+                final_pnl = 0.0
+                for _sym, entry, exit_price, qty, status, _max_fav, _max_adv in legs:
+                    if status == "closed" and entry is not None and exit_price is not None and qty is not None:
+                        final_pnl += (float(entry) - float(exit_price)) * float(qty)
+
+                # Run max DD / peak PnL (aggregated unrealized)
+                cur.execute(
+                    """
+                    select ts, sum(unrealized_pnl_usdt) as pnl
+                    from snapshots
+                    where run_id = %s
+                    group by ts
+                    """,
+                    (run_id,),
+                )
+                series = cur.fetchall()
+                max_dd = None
+                peak_pnl = None
+                if series:
+                    pnls = [float(p[1] or 0) for p in series]
+                    max_dd = min(pnls)
+                    peak_pnl = max(pnls)
+
+                # Close reason from latest run_completed event
+                cur.execute(
+                    """
+                    select message
+                    from events
+                    where run_id = %s and type in ('paper_run_completed', 'live_run_completed')
+                    order by ts desc
+                    limit 1
+                    """,
+                    (run_id,),
+                )
+                row = cur.fetchone()
+                close_reason = row[0] if row else None
+
+                duration_hours = None
+                if start_ts and end_ts:
+                    try:
+                        duration_hours = (
+                            (_parse_dt(end_ts) - _parse_dt(start_ts)).total_seconds() / 3600.0
+                        )
+                    except Exception:
+                        duration_hours = None
+
+                out.append(
+                    {
+                        "run_id": run_id,
+                        "mode": run_mode,
+                        "strategy_tag": strategy_tag,
+                        "start_ts": start_ts,
+                        "end_ts": end_ts,
+                        "duration_hours": duration_hours,
+                        "close_reason": close_reason,
+                        "initial_investment": float(initial_balance) if initial_balance is not None else None,
+                        "final_pnl": final_pnl,
+                        "max_dd": max_dd,
+                        "peak_pnl": peak_pnl,
+                    }
+                )
+
+    return {"runs": out}
+
+
+@app.get("/reports/run")
+def get_report_run(run_id: str):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                select run_id, mode, strategy_tag, start_ts::text, end_ts::text, initial_balance
+                from runs
+                where run_id = %s
+                """,
+                (run_id,),
+            )
+            run = cur.fetchone()
+            if not run:
+                return {"run": None}
+
+            cur.execute(
+                """
+                select symbol, entry_price, exit_price, qty, status, max_favorable_pnl_usdt, max_adverse_pnl_usdt
+                from legs
+                where run_id = %s
+                order by symbol asc
+                """,
+                (run_id,),
+            )
+            legs = cur.fetchall()
+
+            legs_out = []
+            for sym, entry, exit_price, qty, status, max_fav, max_adv in legs:
+                final_pnl = None
+                if status == "closed" and entry is not None and exit_price is not None and qty is not None:
+                    final_pnl = (float(entry) - float(exit_price)) * float(qty)
+                legs_out.append(
+                    {
+                        "symbol": sym,
+                        "status": status,
+                        "entry_price": float(entry) if entry is not None else None,
+                        "exit_price": float(exit_price) if exit_price is not None else None,
+                        "qty": float(qty) if qty is not None else None,
+                        "initial_investment": None,  # per-leg baseline is implicit by margin at open
+                        "final_pnl": final_pnl,
+                        "max_dd": float(max_adv) if max_adv is not None else None,
+                        "peak_pnl": float(max_fav) if max_fav is not None else None,
+                    }
+                )
+
+            # Run aggregated metrics
+            cur.execute(
+                """
+                select ts, sum(unrealized_pnl_usdt) as pnl
+                from snapshots
+                where run_id = %s
+                group by ts
+                """,
+                (run_id,),
+            )
+            series = cur.fetchall()
+            max_dd = None
+            peak_pnl = None
+            if series:
+                pnls = [float(p[1] or 0) for p in series]
+                max_dd = min(pnls)
+                peak_pnl = max(pnls)
+
+            final_pnl = 0.0
+            for l in legs_out:
+                if l["final_pnl"] is not None:
+                    final_pnl += l["final_pnl"]
+
+            run_out = {
+                "run_id": run[0],
+                "mode": run[1],
+                "strategy_tag": run[2],
+                "start_ts": run[3],
+                "end_ts": run[4],
+                "initial_investment": float(run[5]) if run[5] is not None else None,
+                "final_pnl": final_pnl,
+                "max_dd": max_dd,
+                "peak_pnl": peak_pnl,
+            }
+            return {"run": run_out, "legs": legs_out}
+
+
+@app.get("/reports/aggregate")
+def get_reports_aggregate(
+    mode: str | None = None,
+    strategy: str | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+):
+    runs = get_report_runs(mode=mode, strategy=strategy, date_from=date_from, date_to=date_to)["runs"]
+    if not runs:
+        return {"aggregate": None}
+
+    # Convert to percent vs initial investment
+    def pct(value: float | None, base: float | None) -> float | None:
+        if value is None or base in (None, 0):
+            return None
+        return (value / base) * 100.0
+
+    final_pnls = []
+    max_dds = []
+    peak_pnls = []
+    for r in runs:
+        base = r.get("initial_investment")
+        final_pnls.append(pct(r.get("final_pnl"), base))
+        max_dds.append(pct(r.get("max_dd"), base))
+        peak_pnls.append(pct(r.get("peak_pnl"), base))
+
+    # simple average, ignore None
+    def avg(values: list[float | None]) -> float | None:
+        nums = [v for v in values if v is not None]
+        if not nums:
+            return None
+        return sum(nums) / len(nums)
+
+    return {
+        "aggregate": {
+            "avg_final_pnl_pct": avg(final_pnls),
+            "avg_max_dd_pct": avg(max_dds),
+            "avg_peak_pnl_pct": avg(peak_pnls),
+        }
+    }
 
 
 @app.get("/heartbeats/latest")

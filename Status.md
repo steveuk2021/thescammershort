@@ -80,7 +80,7 @@
     - Output per-strategy PnL/DD/exit timing.
 
 ## Next Feature Work (Planned)
-1. **DB‑Backed Settings + Settings Page**
+1. **[DONE] DB‑Backed Settings + Settings Page**
    - Store tunable runtime vars in DB.
    - UI page to edit without redeploy.
    - Secrets remain in Railway env.
@@ -89,5 +89,6 @@
    - Run history (completed only) with filters (date range, mode, strategy).
    - Metrics per run: Initial Investment, Final PnL (realized), Max DD, Peak PnL.
    - Drilldown to all legs with same metrics.
-   - Charts: equity curve (initial + aggregated unrealized), plus per‑leg lines.
    - Aggregates across runs (percent only, simple average).
+   - **Phase A (DONE):** list, filters, drilldown, aggregates.
+   - **Phase B (PENDING):** charts (equity curve + per‑leg lines).

@@ -1,6 +1,6 @@
 "use client"
 
-import { Activity, Settings } from "lucide-react"
+import { Activity, BarChart3, Settings } from "lucide-react"
 import Link from "next/link"
 
 interface HeaderProps {
@@ -32,6 +32,13 @@ export function Header({ mode, setMode }: HeaderProps) {
             >
               <Settings className="h-3.5 w-3.5" />
               Settings
+            </Link>
+            <Link
+              href="/reports"
+              className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium text-muted-foreground hover:bg-muted"
+            >
+              <BarChart3 className="h-3.5 w-3.5" />
+              Reports
             </Link>
             <button
               className={`rounded px-2 py-0.5 text-xs font-medium ${
