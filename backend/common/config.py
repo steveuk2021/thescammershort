@@ -34,6 +34,7 @@ class GlobalSettings:
         self.poll_interval_sec = int(getenv("POLL_INTERVAL_SEC", "30"))
         self.strategy_tag = getenv("STRATEGY_TAG", "S1")
         self.paper_initial_balance = float(getenv("PAPER_INITIAL_BALANCE", "1000"))
+        self.hold_hours = float(getenv("HOLD_HOURS", "24"))
 
         # Secrets / infra
         self.bitget_api_key = getenv("BITGET_API_KEY", "")
@@ -61,6 +62,7 @@ class RuntimeSettings:
         self.global_kill_dd_pct = float(getenv(f"{prefix}_GLOBAL_KILL_DD_PCT", str(base.global_kill_dd_pct)))
         self.poll_interval_sec = int(getenv(f"{prefix}_POLL_INTERVAL_SEC", str(base.poll_interval_sec)))
         self.strategy_tag = getenv(f"{prefix}_STRATEGY_TAG", base.strategy_tag)
+        self.hold_hours = float(getenv(f"{prefix}_HOLD_HOURS", str(base.hold_hours)))
         initial_balance_env = os.getenv(f"{prefix}_INITIAL_BALANCE")
         if initial_balance_env is not None and initial_balance_env != "":
             self.initial_balance = float(initial_balance_env)

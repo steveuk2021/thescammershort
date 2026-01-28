@@ -134,7 +134,7 @@ class StrategyEngine:
         if strategy_tag != "s2" and portfolio_pnl_pct <= -self.settings.global_kill_dd_pct:
             return ExitDecision(True, "kill_switch")
 
-        if hours_elapsed >= 24.0:
+        if hours_elapsed >= self.settings.hold_hours:
             return ExitDecision(True, "24h")
 
         if strategy_tag in ("s1", "s3"):

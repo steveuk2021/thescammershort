@@ -9,6 +9,7 @@
 ## Scheduling
 - `ENTRY_TIME_UTC`: daily entry time (HH:MM)
 - `TRADE_WEEKENDS`: true | false
+- `HOLD_HOURS`: global hold time before forced exit (default 24)
 
 ## Strategy
 - `NUM_LEGS`
