@@ -30,6 +30,7 @@ export default function SettingsPage() {
   const [authReady, setAuthReady] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
   const [settings, setSettings] = useState<Record<Mode, Record<string, string>>>({
     paper: {},
     live: {},
@@ -71,6 +72,7 @@ export default function SettingsPage() {
     if (!authHeader) return
     setLoading(true)
     setError(null)
+    setSuccess(null)
     try {
       const [paper, live] = await Promise.all([fetchSettings("paper"), fetchSettings("live")])
       setSettings({ paper, live })
@@ -105,6 +107,7 @@ export default function SettingsPage() {
     if (!authHeader) return
     setLoading(true)
     setError(null)
+    setSuccess(null)
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE}/settings?mode=${mode}`, {
         method: "PUT",
@@ -117,6 +120,8 @@ export default function SettingsPage() {
       if (!res.ok) {
         throw new Error(`Failed to save ${mode} settings`)
       }
+      await loadAll()
+      setSuccess(`${mode.toUpperCase()} settings saved`)
     } catch (e: any) {
       setError(e?.message || "Failed to save settings")
     } finally {
@@ -133,26 +138,27 @@ export default function SettingsPage() {
         </p>
         <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
           <input
-            className="h-9 w-full rounded border border-border bg-background px-3 text-sm"
+            className="h-10 w-full rounded border border-border bg-background px-3 text-base"
             placeholder="Username"
             value={user}
             onChange={(e) => setUser(e.target.value)}
           />
           <input
-            className="h-9 w-full rounded border border-border bg-background px-3 text-sm"
+            className="h-10 w-full rounded border border-border bg-background px-3 text-base"
             placeholder="Password"
             type="password"
             value={pass}
             onChange={(e) => setPass(e.target.value)}
           />
           <button
-            className="h-9 rounded bg-primary px-4 text-sm font-medium text-primary-foreground"
+            className="h-10 rounded bg-primary px-4 text-base font-medium text-primary-foreground"
             onClick={saveAuth}
           >
             Save
           </button>
         </div>
-        {error && <div className="mt-3 text-xs text-loss">{error}</div>}
+        {error && <div className="mt-3 text-sm text-loss">{error}</div>}
+        {success && <div className="mt-3 text-sm text-profit">{success}</div>}
       </div>
 
       {authReady && (
@@ -160,23 +166,23 @@ export default function SettingsPage() {
           {(["paper", "live"] as Mode[]).map((mode) => (
             <div key={mode} className="rounded border border-border bg-card p-4">
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-sm font-medium text-muted-foreground">
+                <h2 className="text-base font-medium text-muted-foreground">
                   {mode.toUpperCase()} Settings
                 </h2>
                 <button
-                  className="h-8 rounded bg-primary px-3 text-xs font-medium text-primary-foreground"
+                  className="h-9 rounded bg-primary px-3 text-sm font-medium text-primary-foreground disabled:opacity-60"
                   onClick={() => saveMode(mode)}
                   disabled={loading}
                 >
-                  Save
+                  {loading ? "Saving..." : "Save"}
                 </button>
               </div>
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-1 gap-4">
                 {FIELDS.map((field) => (
-                  <label key={field.key} className="text-xs text-muted-foreground">
-                    <span className="block mb-1">{field.label}</span>
+                  <label key={field.key} className="text-sm text-muted-foreground">
+                    <span className="block mb-1 text-base text-foreground">{field.label}</span>
                     <input
-                      className="h-9 w-full rounded border border-border bg-background px-3 text-sm text-foreground"
+                      className="h-10 w-full rounded border border-border bg-background px-3 text-base text-foreground"
                       type={field.type}
                       value={settings[mode]?.[field.key] || ""}
                       onChange={(e) => updateField(mode, field.key, e.target.value)}
