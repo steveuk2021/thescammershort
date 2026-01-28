@@ -91,4 +91,4 @@
     - Drilldown to all legs with same metrics.
     - Aggregates across runs (percent only, simple average).
     - **Phase A (DONE):** list, filters, drilldown, aggregates.
-    - **Phase B (DONE):** charts (equity curve + per‑leg lines).
+    - **Phase B (PENDING):** charts (equity curve + per‑leg lines).
