@@ -189,7 +189,6 @@ class LiveTrader:
                 self.max_leg_pnl_pct.pop(sym, None)
 
         portfolio_pnl = 0.0
-        portfolio_margin = 0.0
         for sym, pos in pos_by_symbol.items():
             entry = float(pos.get("openPriceAvg") or 0)
             qty = float(pos.get("total") or 0)
@@ -253,7 +252,6 @@ class LiveTrader:
                 continue
 
             portfolio_pnl += pnl
-            portfolio_margin += margin if margin > 0 else 0.0
 
         if self.run_id:
             update_run_balance(self.run_id, current_balance=self._get_account_equity())
@@ -348,10 +346,12 @@ class LiveTrader:
             except Exception:
                 hours_elapsed = 0.0
 
-        margin_total = (
-            portfolio_margin if portfolio_margin > 0 else (self.settings.margin_per_leg_usdt * self.settings.num_legs)
-        )
-        portfolio_pnl_pct = portfolio_pnl / margin_total
+        leg_count = len(pos_by_symbol)
+        if leg_count > 0:
+            margin_total = self.settings.margin_per_leg_usdt * leg_count
+            portfolio_pnl_pct = portfolio_pnl / margin_total
+        else:
+            portfolio_pnl_pct = 0.0
         decision = self.engine.evaluate_portfolio_exit(
             portfolio_pnl_pct,
             hours_elapsed,

@@ -280,7 +280,11 @@ class PaperTrader:
                         )
                 conn.commit()
 
-        portfolio_pnl_pct = portfolio_pnl / (self.settings.margin_per_leg_usdt * self.settings.num_legs)
+        leg_count = max(0, len(self.legs))
+        if leg_count > 0:
+            portfolio_pnl_pct = portfolio_pnl / (self.settings.margin_per_leg_usdt * leg_count)
+        else:
+            portfolio_pnl_pct = 0.0
         decision = self.engine.evaluate_portfolio_exit(
             portfolio_pnl_pct,
             hours_elapsed,
